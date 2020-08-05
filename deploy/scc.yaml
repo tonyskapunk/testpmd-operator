@@ -3,21 +3,13 @@ kind: SecurityContextConstraints
 metadata:
   name: testpmd
 allowHostDirVolumePlugin: true
-allowHostIPC: false
-allowHostNetwork: false
-allowHostPID: false
-allowHostPorts: false
 allowPrivilegeEscalation: false
-allowPrivilegedContainer: false
 allowedCapabilities:
-  - "*"
-allowedUnsafeSysctls:
-  - "*"
-defaultAddCapabilities: null
+  - IPC_LOCK
 fsGroup:
   type: RunAsAny
 readOnlyRootFilesystem: false
-runAsUser:
+runAsUser: 
   type: RunAsAny
 seLinuxContext:
   type: RunAsAny
@@ -26,4 +18,9 @@ seccompProfiles:
 users:
   - system:serviceaccount:example-cnf:testpmd-operator
 volumes:
-  - "*"
+  - configMap
+  - downwardAPI
+  - emptyDir
+  - persistentVolumeClaim
+  - projected
+  - secret
