@@ -28,7 +28,7 @@ metadata:
     capabilities: Basic Install
     operators.operatorframework.io/builder: operator-sdk-v1.0.0
     operators.operatorframework.io/project_layout: ansible.sdk.operatorframework.io/v1
-  name: testpmd-operator.v0.1.0
+  name: testpmd-operator.v0.0.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -164,7 +164,7 @@ spec:
                 - --enable-leader-election
                 - --leader-election-id=testpmd-operator
                 image: quay.io/krsacme/testpmd-operator:v0.1.0
-                imagePullPolicy: Always
+                imagePullPolicy: IfNotPresent
                 name: manager
                 resources: {}
               terminationGracePeriodSeconds: 10
@@ -213,4 +213,4 @@ spec:
   maturity: alpha
   provider:
     name: Red Hat
-  version: 0.1.0
+  version: 0.0.1
