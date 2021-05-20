@@ -1,0 +1,27 @@
+name: Quay
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-[0-9]+"
+
+env:
+  REGISTRY: quay.io
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Registry login
+        run: echo "${{ secrets.QUAY_TOKEN }}" | docker login ${REGISTRY} -u ${{ secrets.QUAY_USER }} --password-stdin
+
+      - name: Build and Push images
+        run: |
+          org=${GITHUB_REPOSITORY%/*}
+          make all CONTAINER_CLI=docker ORG=${org}
+          make bundle-build CONTAINER_CLI=docker ORG=${org}

@@ -1,16 +1,20 @@
 # Current Operator version
-VERSION ?= 0.2.5
+TAG ?= $(shell git tag --points-at HEAD)
 REGISTRY ?= quay.io
 ORG ?= rh-nfv-int
 DEFAULT_CHANNEL ?= alpha
-
 CONTAINER_CLI ?= podman
 CLUSTER_CLI ?= oc
-
 OPERATOR_NAME = testpmd-operator
+VERSION := $(subst v,,$(TAG))
+
+# Fail if TAG is empty
+ifeq ($(TAG),)
+$(error TAG is emtpy)
+endif
 
 # Default bundle image tag
-BUNDLE_IMG ?= $(REGISTRY)/$(ORG)/$(OPERATOR_NAME)-bundle:v$(VERSION)
+BUNDLE_IMG ?= $(REGISTRY)/$(ORG)/$(OPERATOR_NAME)-bundle:$(TAG)
 # Options for 'bundle-build'
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
@@ -21,7 +25,7 @@ endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # Image URL to use all building/pushing image targets
-IMG ?= $(REGISTRY)/$(ORG)/$(OPERATOR_NAME):v$(VERSION)
+IMG ?= $(REGISTRY)/$(ORG)/$(OPERATOR_NAME):$(TAG)
 
 all: docker-build bundle-build
 
@@ -75,6 +79,23 @@ KUSTOMIZE=$(shell which kustomize)
 endif
 endif
 
+# Installs operator-sdk if is not available
+.PHONY: operator-sdk
+OPERATOR_SDK = $(shell pwd)/bin/operator-sdk
+operator-sdk:
+ifeq (,$(wildcard $(OPERATOR_SDK)))
+ifeq (,$(shell which operator-sdk 2>/dev/null))
+	@{ \
+	set -e ;\
+	mkdir -p $(dir $(OPERATOR_SDK)) ;\
+	curl -sLo $(OPERATOR_SDK) https://github.com/operator-framework/operator-sdk/releases/download/v1.7.2/operator-sdk_$(OS)_$(ARCH) ; \
+	chmod u+x $(OPERATOR_SDK) ; \
+	}
+else
+OPERATOR_SDK=$(shell which operator-sdk)
+endif
+endif
+
 # Download ansible-operator locally if necessary, preferring the $(pwd)/bin path over global if both exist.
 .PHONY: ansible-operator
 ANSIBLE_OPERATOR = $(shell pwd)/bin/ansible-operator
@@ -98,14 +119,15 @@ docker-push-with-bundle:
 
 # Generate bundle manifests and metadata, then validate generated files.
 .PHONY: bundle
-bundle: kustomize docker-push-with-bundle
-	operator-sdk generate kustomize manifests -q
+bundle: kustomize operator-sdk
+	$(OPERATOR_SDK) generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
-	$(eval DIGEST = $(shell skopeo inspect docker://$(IMG) | jq -r '.Digest'))
+	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+	${CONTAINER_CLI} pull $(IMG)
+	$(eval DIGEST = $(shell ${CONTAINER_CLI} inspect $(IMG) | jq -r '.[]["Digest"]'))
 	sed -i -e 's/\(\s*image: .*\):v'$(VERSION)'/\1@'$(DIGEST)'/' bundle/manifests/$(OPERATOR_NAME).clusterserviceversion.yaml
 	cat relatedImages.yaml >> bundle/manifests/$(OPERATOR_NAME).clusterserviceversion.yaml
-	operator-sdk bundle validate ./bundle
+	$(OPERATOR_SDK) bundle validate ./bundle
 
 # Build the bundle image.
 .PHONY: bundle-build
