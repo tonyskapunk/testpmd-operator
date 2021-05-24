@@ -1,17 +1,12 @@
 # Current Operator version
-TAG ?= $(shell git tag --points-at HEAD)
-REGISTRY ?= quay.io
-ORG ?= rh-nfv-int
+VERSION         := 0.2.4
+TAG             := v$(VERSION)
+REGISTRY        ?= quay.io
+ORG             ?= rh-nfv-int
 DEFAULT_CHANNEL ?= alpha
-CONTAINER_CLI ?= podman
-CLUSTER_CLI ?= oc
-OPERATOR_NAME = testpmd-operator
-VERSION := $(subst v,,$(TAG))
-
-# Fail if TAG is empty
-ifeq ($(TAG),)
-$(error TAG is emtpy)
-endif
+CONTAINER_CLI   ?= podman
+CLUSTER_CLI     ?= oc
+OPERATOR_NAME   := testpmd-operator
 
 # Default bundle image tag
 BUNDLE_IMG ?= $(REGISTRY)/$(ORG)/$(OPERATOR_NAME)-bundle:$(TAG)
@@ -128,8 +123,16 @@ bundle: kustomize operator-sdk
 	sed -i -e 's/\(\s*image: .*\):v'$(VERSION)'/\1@'$(DIGEST)'/' bundle/manifests/$(OPERATOR_NAME).clusterserviceversion.yaml
 	$(OPERATOR_SDK) bundle validate ./bundle
 
-# Build the bundle image.
+# Build the bundle image, using local bundle image name
 .PHONY: bundle-build
 bundle-build: bundle
-	${CONTAINER_CLI} build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	${CONTAINER_CLI} build -f bundle.Dockerfile \
+		-t bundle .
+
+# Tag local bundle image with our registry BUNDLE_IMG
+bundle-tag:
+	${CONTAINER_CLI} tag bundle $(BUNDLE_IMG)
+
+# Push the BUNDLE_IMG
+bundle-push: bundle-tag
 	${CONTAINER_CLI} push $(BUNDLE_IMG)
