@@ -3,7 +3,9 @@ name: Quay
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+-?[0-9]*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-[0-9]+"
+  workflow_dispatch:
 
 env:
   REGISTRY: quay.io
@@ -26,14 +28,13 @@ jobs:
           TAG=$(git tag --points-at HEAD)
           VERSION=${TAG/v/}
           make all CONTAINER_CLI=docker ORG=${ORG} VERSION=${VERSION}
-          make bundle-build bundle-push CONTAINER_CLI=docker ORG=${ORG} VERSION=${VERSION}
 
       - name: Login, Build and Push Operator to connect.redhat.com
         run: |
           echo "${{ secrets.CONNECT_TOKEN_OPERATOR }}" | docker login ${CONNECT_REGISTRY} -u ${{ secrets.CONNECT_USER }} --password-stdin
           TAG=$(git tag --points-at HEAD)
           VERSION=${TAG/v/}
-          make all CONTAINER_CLI=docker REGISTRY=${CONNECT_REGISTRY} ORG=${{ secrets.CONNECT_OSPID_OPERATOR }} VERSION=${VERSION}
+          make operator-all CONTAINER_CLI=docker REGISTRY=${CONNECT_REGISTRY} ORG=${{ secrets.CONNECT_OSPID_OPERATOR }} VERSION=${VERSION}
 
       - name: Login, Build and Push Bundle to connect.redhat.com
         run: |

@@ -1,5 +1,5 @@
 # Current Operator version
-VERSION         := 0.2.4
+VERSION         := 0.2.5
 TAG             := v$(VERSION)
 REGISTRY        ?= quay.io
 ORG             ?= rh-nfv-int
@@ -22,7 +22,13 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # Image URL to use all building/pushing image targets
 IMG ?= $(REGISTRY)/$(ORG)/$(OPERATOR_NAME):$(TAG)
 
-all: docker-build bundle-build
+all: operator-all bundle-all
+
+# Operator build and push
+operator-all: operator-build operator-push
+
+# Bundle build and push
+bundle-all: bundle-build bundle-push
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: ansible-operator
@@ -46,9 +52,13 @@ deploy: kustomize
 undeploy: kustomize
 	$(KUSTOMIZE) build config/default | ${CLUSTER_CLI} delete -f -
 
-# Build the docker image
-docker-build:
+# Build the operator image
+operator-build:
 	${CONTAINER_CLI} build . -t ${IMG}
+
+# Push the operator image
+operator-push:
+	${CONTAINER_CLI} push ${IMG}
 
 PATH  := $(PATH):$(PWD)/bin
 SHELL := env PATH=$(PATH) /bin/sh
@@ -107,10 +117,6 @@ else
 ANSIBLE_OPERATOR = $(shell which ansible-operator)
 endif
 endif
-
-# Push the docker image
-docker-push-with-bundle:
-	${CONTAINER_CLI} push ${IMG}
 
 # Generate bundle manifests and metadata, then validate generated files.
 .PHONY: bundle
