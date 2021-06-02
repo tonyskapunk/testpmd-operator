@@ -128,6 +128,7 @@ bundle: kustomize operator-sdk
 	$(eval DIGEST = $(shell ${CONTAINER_CLI} inspect $(IMG) | jq -r '.[]["Digest"]'))
 	sed -i -e 's/\(\s*image: .*\):v'$(VERSION)'/\1@'$(DIGEST)'/' bundle/manifests/$(OPERATOR_NAME).clusterserviceversion.yaml
 	cat relatedImages.yaml >> bundle/manifests/$(OPERATOR_NAME).clusterserviceversion.yaml
+	sed -i -e '/^# Copy.*/i LABEL com.redhat.openshift.versions="v4.6"\nLABEL com.redhat.delivery.backport=false\nLABEL com.redhat.delivery.operator.bundle=true' bundle.Dockerfile
 	$(OPERATOR_SDK) bundle validate ./bundle
 
 # Build the bundle image, using local bundle image name
