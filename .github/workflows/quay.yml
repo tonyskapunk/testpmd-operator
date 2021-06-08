@@ -20,26 +20,26 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Registry login
-        run: echo "${{ secrets.QUAY_TOKEN }}" | docker login ${REGISTRY} -u ${{ secrets.QUAY_USER }} --password-stdin
+        run: echo "${{ secrets.QUAY_TOKEN }}" | podman login ${REGISTRY} -u ${{ secrets.QUAY_USER }} --password-stdin
 
       - name: Build and Push images
         run: |
           ORG=${GITHUB_REPOSITORY%/*}
           TAG=$(git tag --points-at HEAD)
           VERSION=${TAG/v/}
-          make all CONTAINER_CLI=docker ORG=${ORG} VERSION=${VERSION}
+          make all ORG=${ORG} VERSION=${VERSION}
 
       - name: Login, Build and Push Operator to connect.redhat.com
         run: |
-          echo "${{ secrets.CONNECT_TOKEN_OPERATOR }}" | docker login ${CONNECT_REGISTRY} -u ${{ secrets.CONNECT_USER }} --password-stdin
+          echo "${{ secrets.CONNECT_TOKEN_OPERATOR }}" | podman login ${CONNECT_REGISTRY} -u ${{ secrets.CONNECT_USER }} --password-stdin
           TAG=$(git tag --points-at HEAD)
           VERSION=${TAG/v/}
-          make operator-all CONTAINER_CLI=docker REGISTRY=${CONNECT_REGISTRY} ORG=${{ secrets.CONNECT_OSPID_OPERATOR }} VERSION=${VERSION}
+          make operator-all REGISTRY=${CONNECT_REGISTRY} ORG=${{ secrets.CONNECT_OSPID_OPERATOR }} VERSION=${VERSION}
 
       - name: Login, Build and Push Bundle to connect.redhat.com
         run: |
-          docker logout ${CONNECT_REGISTRY}
-          echo "${{ secrets.CONNECT_TOKEN_BUNDLE }}" | docker login ${CONNECT_REGISTRY} -u ${{ secrets.CONNECT_USER }} --password-stdin
+          podman logout ${CONNECT_REGISTRY}
+          echo "${{ secrets.CONNECT_TOKEN_BUNDLE }}" | podman login ${CONNECT_REGISTRY} -u ${{ secrets.CONNECT_USER }} --password-stdin
           TAG=$(git tag --points-at HEAD)
           VERSION=${TAG/v/}
-          make bundle-push CONTAINER_CLI=docker REGISTRY=${CONNECT_REGISTRY} ORG=${{ secrets.CONNECT_OSPID_BUNDLE }} VERSION=${VERSION}
+          make bundle-push REGISTRY=${CONNECT_REGISTRY} ORG=${{ secrets.CONNECT_OSPID_BUNDLE }} VERSION=${VERSION}
