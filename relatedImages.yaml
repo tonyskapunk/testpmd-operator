@@ -1,7 +1,5 @@
   relatedImages:
-    - image: registry.redhat.io/openshift4/dpdk-base-rhel8@sha256:7a146c795271a45804209dcf3af4792498117d638c2eb4cfd69fe4cbf61d81eb
-      name: testpmd-app
-    - image: quay.io/rh-nfv-int/testpmd-container-app-mac@sha256:edc9bb4724d792d415df492aea1768d4127f7fe412d99e0bee8918a8008fcbce
-      name: testpmd-container-app-mac
-    - image: quay.io/rh-nfv-int/testpmd-operator@sha256:a725658acee30dd0d3782a2f4efee9cb949d10cf99dfd56250a8b7be34330bc7
-      name: testpmd-operator
+    - name: testpmd-app
+      image: registry.redhat.io/openshift4/dpdk-base-rhel8@sha256:9af03fb4c5ae1c51f71ad04f02fee8e9458aa73c3f4324e984c731d07896c4e1
+    - name: testpmd-container-app-mac
+      image: quay.io/rh-nfv-int/testpmd-container-app-mac@sha256:edc9bb4724d792d415df492aea1768d4127f7fe412d99e0bee8918a8008fcbce
