@@ -10,6 +10,7 @@ on:
 env:
   REGISTRY: quay.io
   CONNECT_REGISTRY: scan.connect.redhat.com
+  OCP_VERSIONS: "4.5 4.6 4.7 4.8"
 
 jobs:
   build:
@@ -43,3 +44,27 @@ jobs:
           TAG=$(git tag --points-at HEAD)
           VERSION=${TAG/v/}
           make bundle-push REGISTRY=${CONNECT_REGISTRY} ORG=${{ secrets.CONNECT_OSPID_BUNDLE }} VERSION=${VERSION}
+
+      - name: Add component to DCI (distributed-ci.io)
+        run: |
+          pip install dciclient
+          source <(cat <<EOF
+          ${{ secrets.REMOTECI }}
+          EOF
+          )
+          TAG=$(git tag --points-at HEAD)
+          NAME="testpmd-operator:${TAG}"
+          CANONICAL="TestPMD-Operator:${TAG}"
+          TYPE="operator"
+          URL="${REGISTRY}/${GITHUB_REPOSITORY}:${TAG}"
+          TEAM_ID=$( dcictl --format json team-list | jq -r '.teams[]|.id' )
+          for ocp_version in ${OCP_VERSIONS}; do
+            topic_id=$( dcictl --format json topic-list | jq -r '.topics[]| select(.name=="OCP-${ocp_version}")|.id' )
+            dcictl component-create \
+              --topic-id ${topic_id} \
+              --team-id ${TEAM_ID} \
+              --name ${NAME} \
+              --canonical_project_name ${CANONICAL} \
+              --type ${TYPE} \
+              --url ${URL}
+          done
